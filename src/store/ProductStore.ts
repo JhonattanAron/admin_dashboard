@@ -3,7 +3,7 @@ import { create } from "zustand";
 type Product = {
   id: string;
   name: string;
-  image: string;
+  images: string[];
   price: number;
   stock: string;
   category: string;

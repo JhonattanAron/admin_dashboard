@@ -57,7 +57,7 @@ export function ProductForm() {
     try {
       const addFunction = await addProduct({
         name: formData.name,
-        image: "/placeholder.svg",
+        images: imageUrls,
         price: Number(formData.price),
         stock: formData.stock,
         category: category,
@@ -69,7 +69,6 @@ export function ProductForm() {
       setTimeout(() => {
         setIsLoading(false);
         showToast("Exito al Agregar el Producto", "success");
-        router.push("dashboard/productos");
       }, 1000);
     } catch (error) {
       console.error("Error con el servidor:", error);
