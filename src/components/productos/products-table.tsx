@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -10,19 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Edit, MoreHorizontal, Search, Trash } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { useProductStore } from "@/store/ProductStore";
 
 function getStockStatus(stock: number) {
   if (stock === 0) {
@@ -35,76 +28,29 @@ function getStockStatus(stock: number) {
 }
 
 export function ProductsTable() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const { products, total, pageSize, isLoading, fetchProducts } =
+    useProductStore();
 
-  const products = [
-    {
-      id: 1,
-      name: "Smartphone XYZ",
-      image: "/placeholder.svg",
-      price: 599.99,
-      stock: 45,
-      category: "Electrónica",
-      supplier: "TechSupplies Inc.",
-    },
-    {
-      id: 2,
-      name: "Laptop Pro 15",
-      image: "/placeholder.svg",
-      price: 1299.99,
-      stock: 12,
-      category: "Electrónica",
-      supplier: "TechSupplies Inc.",
-    },
-    {
-      id: 3,
-      name: "Auriculares Bluetooth",
-      image: "/placeholder.svg",
-      price: 89.99,
-      stock: 78,
-      category: "Accesorios",
-      supplier: "AudioTech",
-    },
-    {
-      id: 4,
-      name: "Smartwatch Series 5",
-      image: "/placeholder.svg",
-      price: 299.99,
-      stock: 3,
-      category: "Wearables",
-      supplier: "WearTech",
-    },
-    {
-      id: 5,
-      name: "Cámara DSLR Pro",
-      image: "/placeholder.svg",
-      price: 849.99,
-      stock: 0,
-      category: "Fotografía",
-      supplier: "PhotoPro",
-    },
-  ];
-
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.supplier.toLowerCase().includes(searchTerm.toLowerCase())
+  const [page, setPage] = useState(
+    parseInt(searchParams.get("page") || "1", 10)
   );
+  const searchTerm = searchParams.get("search") || "";
+
+  useEffect(() => {
+    fetchProducts(page, pageSize, searchTerm);
+  }, [page, pageSize, searchTerm]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  if (isLoading) {
+    return <>Cargando....</>;
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar productos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-9 w-[250px] lg:w-[300px]"
-          />
-        </div>
-      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -120,19 +66,22 @@ export function ProductsTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProducts.length === 0 ? (
+            {products.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center">
                   No se encontraron productos.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProducts.map((product) => (
-                <TableRow key={product.id}>
+              products.map((product, index) => (
+                <TableRow key={product.id || index}>
                   <TableCell>
                     <Image
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
+                      src={
+                        (product.images && product.images[0]) ||
+                        "/placeholder.svg"
+                      }
+                      alt={product.name || "Producto sin nombre"}
                       width={40}
                       height={40}
                       className="rounded-md object-cover"
@@ -143,44 +92,48 @@ export function ProductsTable() {
                   <TableCell>{product.stock}</TableCell>
                   <TableCell>
                     {(() => {
-                      const { text, className } = getStockStatus(product.stock);
+                      const { text, className } = getStockStatus(
+                        Number(product.stock) || 0
+                      );
                       return <Badge className={className}>{text}</Badge>;
                     })()}
                   </TableCell>
                   <TableCell>{product.category}</TableCell>
                   <TableCell>{product.supplier}</TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <Link
-                            href={`/dashboard/productos/editar/${product.id}`}
-                            className="flex items-center"
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash className="mr-2 h-4 w-4" />
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Abrir menú</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Controles de paginación */}
+      <div className="flex justify-between items-center mt-4">
+        <Button
+          variant="outline"
+          onClick={() => handlePageChange(Math.max(page - 1, 1))}
+          disabled={page === 1}
+        >
+          Anterior
+        </Button>
+        <span>
+          Página {page} de {Math.ceil(total / pageSize)}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() =>
+            handlePageChange(page * pageSize < total ? page + 1 : page)
+          }
+          disabled={page * pageSize >= total}
+        >
+          Siguiente
+        </Button>
       </div>
     </div>
   );

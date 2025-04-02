@@ -4,6 +4,7 @@ import { ProductsTable } from "@/components/productos/products-table";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { DashboardShell } from "@/components/dashboard-shell";
 import Link from "next/link";
+import { SearchBar } from "@/components/productos/SearchBar";
 
 export default function ProductsPage() {
   return (
@@ -20,7 +21,12 @@ export default function ProductsPage() {
         </Link>
       </DashboardHeader>
       <div>
-        <ProductsTable />
+        <div className="mb-5">
+          <SearchBar />
+        </div>
+        <div>
+          <ProductsTable />
+        </div>
       </div>
     </DashboardShell>
   );
