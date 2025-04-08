@@ -29,7 +29,6 @@ import { useRouter } from "next/navigation";
 export function ProductForm() {
   const router = useRouter();
   const [sku, setSku] = useState<string>("");
-
   const [isLoading, setIsLoading] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [category, setCategory] = useState<string>(""); // Estado para categoría
@@ -40,7 +39,6 @@ export function ProductForm() {
     price: "",
     cost: "",
     stock: "",
-    sku: "",
   });
 
   const { addProduct } = useProductStore();
@@ -70,6 +68,7 @@ export function ProductForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log(sku);
 
     try {
       const addFunction = await addProduct({
@@ -80,7 +79,7 @@ export function ProductForm() {
         category: category,
         description: formData.description,
         supplier: supplier,
-        sku: formData.sku,
+        sku: sku,
       });
       console.log(await addFunction);
       setTimeout(() => {
