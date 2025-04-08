@@ -28,6 +28,8 @@ import { useRouter } from "next/navigation";
 
 export function ProductForm() {
   const router = useRouter();
+  const [sku, setSku] = useState<string>("");
+
   const [isLoading, setIsLoading] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [category, setCategory] = useState<string>(""); // Estado para categoría
@@ -42,6 +44,21 @@ export function ProductForm() {
   });
 
   const { addProduct } = useProductStore();
+  const generarSKU = () => {
+    const letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numeros = "0123456789";
+
+    // Crear una cadena aleatoria para el SKU
+    let skuGenerado = "SKU-";
+    for (let i = 0; i < 4; i++) {
+      skuGenerado += letras.charAt(Math.floor(Math.random() * letras.length)); // Letras aleatorias
+    }
+    for (let i = 0; i < 4; i++) {
+      skuGenerado += numeros.charAt(Math.floor(Math.random() * numeros.length)); // Números aleatorios
+    }
+
+    setSku(skuGenerado); // Establecer el SKU generado
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -231,13 +248,24 @@ export function ProductForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU</Label>
-                  <Input
-                    id="sku"
-                    name="sku"
-                    placeholder="SKU-12345"
-                    value={formData.sku}
-                    onChange={handleInputChange}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="sku"
+                      name="sku"
+                      placeholder="SKU-12345"
+                      contentEditable="false"
+                      value={sku}
+                      onChange={handleInputChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={generarSKU}
+                      className="w-30"
+                    >
+                      Generar SKU
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
