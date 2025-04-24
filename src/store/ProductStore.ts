@@ -1,16 +1,5 @@
 import { create } from "zustand";
-
-type Product = {
-  id: string;
-  name: string;
-  images: string[];
-  price: number;
-  stock: string;
-  category: string;
-  description: string;
-  supplier: string;
-  sku: string;
-};
+import { Product } from "./Interfaces";
 
 type ProductStore = {
   products: Product[];
@@ -82,7 +71,7 @@ export const useProductStore = create<ProductStore>((set) => ({
     });
     set((state) => ({
       products: state.products.map((p) =>
-        p.id === id ? { ...p, ...updatedProduct } : p
+        p._id === id ? { ...p, ...updatedProduct } : p
       ),
     }));
   },
@@ -90,7 +79,7 @@ export const useProductStore = create<ProductStore>((set) => ({
   deleteProduct: async (id) => {
     await fetch(`${API_URL}/productos/${id}`, { method: "DELETE" });
     set((state) => ({
-      products: state.products.filter((p) => p.id !== id),
+      products: state.products.filter((p) => p._id !== id),
     }));
   },
 }));

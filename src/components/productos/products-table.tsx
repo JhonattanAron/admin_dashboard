@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -34,6 +34,7 @@ function getStockStatus(stock: number) {
 }
 
 export function ProductsTable() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { products, total, pageSize, isLoading, fetchProducts } =
     useProductStore();
@@ -80,11 +81,11 @@ export function ProductsTable() {
               </TableRow>
             ) : (
               products.map((product, index) => (
-                <TableRow key={product.id || index}>
+                <TableRow key={product._id || index}>
                   <TableCell>
                     <Image
                       src={
-                        (product.images && product.images[0]) ||
+                        (product.options && product.options[0].image) ||
                         "/placeholder.svg"
                       }
                       alt={product.name || "Producto sin nombre"}
@@ -114,7 +115,18 @@ export function ProductsTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => console.log("Editar")}>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            console.log(product);
+                            router.push(
+                              `productos/nuevo?id=${
+                                product._id
+                              }&data=${encodeURIComponent(
+                                JSON.stringify(product)
+                              )}`
+                            );
+                          }}
+                        >
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem

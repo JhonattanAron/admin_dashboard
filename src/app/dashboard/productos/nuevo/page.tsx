@@ -6,8 +6,8 @@ export default function NewProductPage() {
   return (
     <DashboardShell>
       <DashboardHeader
-        heading="Crear Producto"
-        text="Añade un nuevo producto a tu tienda."
+        heading="Producto Form"
+        text="Añade o modifica un nuevo producto de tu tienda."
       />
       <div className="grid gap-8">
         <ProductForm />
