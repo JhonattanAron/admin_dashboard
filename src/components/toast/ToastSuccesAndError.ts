@@ -7,8 +7,8 @@ export function showToast(message: string, type: "success" | "error") {
   toast.style.backgroundColor = type === "success" ? "#4caf50" : "#f44336";
   toast.style.color = "white";
   toast.style.padding = "10px 20px";
-  toast.style.borderRadius = "5px";
-  toast.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.2)";
+  toast.style.borderRadius = "20px"; // Más redondeado
+  toast.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
   toast.style.display = "flex";
   toast.style.alignItems = "center";
   toast.style.justifyContent = "space-between";
@@ -37,4 +37,15 @@ export function showToast(message: string, type: "success" | "error") {
 
   toast.appendChild(closeButton);
   document.body.appendChild(toast);
+
+  // Ocultar automáticamente después de 1 segundo
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(20px)";
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 300); // Tiempo para que la animación termine
+  }, 1000); // 1 segundo
 }

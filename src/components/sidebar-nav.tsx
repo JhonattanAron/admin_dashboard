@@ -1,12 +1,21 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { LayoutDashboard, ShoppingCart, Package, Users, TruckIcon, DollarSign, BarChart } from "lucide-react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  Users,
+  TruckIcon,
+  DollarSign,
+  BarChart,
+  TagIcon,
+} from "lucide-react";
 
 export function SidebarNav() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const routes = [
     {
@@ -23,6 +32,11 @@ export function SidebarNav() {
       href: "/dashboard/productos",
       icon: Package,
       title: "Productos",
+    },
+    {
+      href: "/dashboard/categorias",
+      icon: TagIcon,
+      title: "Categorias",
     },
     {
       href: "/dashboard/clientes",
@@ -44,7 +58,7 @@ export function SidebarNav() {
       icon: BarChart,
       title: "Reportes",
     },
-  ]
+  ];
 
   return (
     <nav className="flex flex-col space-y-1">
@@ -54,7 +68,9 @@ export function SidebarNav() {
           href={route.href}
           className={cn(
             "flex items-center rounded-md px-3 py-2 text-sm font-medium",
-            pathname === route.href ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+            pathname === route.href
+              ? "bg-primary text-primary-foreground"
+              : "hover:bg-muted"
           )}
         >
           <route.icon className="mr-2 h-4 w-4" />
@@ -62,6 +78,5 @@ export function SidebarNav() {
         </Link>
       ))}
     </nav>
-  )
+  );
 }
-

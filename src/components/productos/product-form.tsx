@@ -26,12 +26,14 @@ import { showToast } from "../toast/ToastSuccesAndError";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OptionItem, Product } from "@/store/Interfaces";
 import { RichTextEditor } from "../rich-text-editor";
+import { useCategoriasStore } from "@/store/categoryStore";
 
 export function ProductForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [internacional, setInternacional] = useState(false); // Valor inicial (false)
   const [origen, setOrigen] = useState("usa"); // Valor inicial ('usa')
+  const { categorias, fetchCategorias } = useCategoriasStore();
 
   const [sku, setSku] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +58,7 @@ export function ProductForm() {
   useEffect(() => {
     const getData = async () => {
       const data = await searchParams.get("data");
+      await fetchCategorias();
       if (data) {
         setIsEdit(true);
         try {
@@ -66,6 +69,9 @@ export function ProductForm() {
           setCategory(parsed.category);
           setSupplier(parsed.supplier);
           setDescription(parsed.description);
+          setDetails(parsed.details);
+          setInternacional(parsed.internacional);
+          setOrigen(parsed.origen);
         } catch (err) {
           console.error("Error al parsear data:", err);
         }
@@ -133,10 +139,9 @@ export function ProductForm() {
           origen: origen,
         });
       }
-      setTimeout(() => {
-        setIsLoading(false);
-        showToast("Exito al Agregar el Producto", "success");
-      }, 1000);
+      setIsLoading(false);
+      showToast("Exito al Agregar el Producto", "success");
+      router.push("/dashboard/productos");
     } catch (error) {
       console.error("Error con el servidor:", error);
       setIsLoading(false);
@@ -225,11 +230,14 @@ export function ProductForm() {
                       <SelectValue placeholder="Seleccionar categoría" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="electronics">Electrónica</SelectItem>
-                      <SelectItem value="clothing">Ropa</SelectItem>
-                      <SelectItem value="home">Hogar</SelectItem>
-                      <SelectItem value="sports">Deportes</SelectItem>
-                      <SelectItem value="toys">Juguetes</SelectItem>
+                      {categorias.map((categorias) => (
+                        <SelectItem
+                          key={categorias._id}
+                          value={categorias.name}
+                        >
+                          {categorias.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

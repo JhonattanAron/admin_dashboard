@@ -21,7 +21,6 @@ import {
   CornerDownRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
   Modal,
@@ -33,13 +32,18 @@ import {
 } from "./modal";
 
 export interface RichTextEditorProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange"> {
   onValueChange?: (value: string) => void;
+  onChange?: (
+    e: React.ChangeEvent<HTMLTextAreaElement> & { htmlValue: string }
+  ) => void;
 }
 
 const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
   ({ value, onChange, onValueChange, className, ...props }, ref) => {
-    const [content, setContent] = useState((value as string) || "");
+    // Internal markdown content for editing
+    const [markdownContent, setMarkdownContent] = useState("");
+    // HTML content for preview and external value
     const [htmlContent, setHtmlContent] = useState("");
     const [activeTab, setActiveTab] = useState("preview");
     const [tableRows, setTableRows] = useState(2);
@@ -64,16 +68,22 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
       }
     };
 
-    // Update internal state when value prop changes
+    // Convert HTML to our markdown format when value prop changes
     useEffect(() => {
-      if (value !== undefined) {
-        setContent(value as string);
+      if (value !== undefined && typeof value === "string") {
+        // Only update if the HTML value is different from our current HTML content
+        if (value !== htmlContent) {
+          // For simplicity, we'll just use the HTML directly in the editor
+          // This means we won't have the markdown syntax, but the HTML will be preserved
+          setMarkdownContent(value);
+          setHtmlContent(value);
+        }
       }
-    }, [value]);
+    }, [value, htmlContent]);
 
-    // Convert markdown-like syntax to HTML for preview
-    useEffect(() => {
-      let html = content;
+    // Convert markdown-like syntax to HTML
+    const convertMarkdownToHtml = (markdown: string): string => {
+      let html = markdown;
 
       // Convert bold: **text** to <strong>text</strong>
       html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
@@ -127,12 +137,18 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
         return tableContent;
       });
 
+      return html;
+    };
+
+    // Update HTML content when markdown content changes
+    useEffect(() => {
+      const html = convertMarkdownToHtml(markdownContent);
       setHtmlContent(html);
-    }, [content]);
+    }, [markdownContent]);
 
     const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      setContent(newValue);
+      const newMarkdownValue = e.target.value;
+      setMarkdownContent(newMarkdownValue);
 
       // Save cursor position
       setCursorPosition({
@@ -140,14 +156,21 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
         end: e.target.selectionEnd,
       });
 
+      // Convert to HTML for external value
+      const newHtmlValue = convertMarkdownToHtml(newMarkdownValue);
+
       // Call the original onChange if provided
       if (onChange) {
-        onChange(e);
+        const enhancedEvent = {
+          ...e,
+          htmlValue: newHtmlValue,
+        };
+        onChange(enhancedEvent);
       }
 
-      // Call onValueChange with the new value
+      // Call onValueChange with the HTML value
       if (onValueChange) {
-        onValueChange(newValue);
+        onValueChange(newHtmlValue);
       }
     };
 
@@ -168,12 +191,12 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
       const { start, end } = cursorPosition;
 
       // Get text before and after cursor
-      const beforeText = content.substring(0, start);
-      const afterText = content.substring(end);
+      const beforeText = markdownContent.substring(0, start);
+      const afterText = markdownContent.substring(end);
 
       // Create new content with inserted text
-      const newContent = beforeText + text + afterText;
-      setContent(newContent);
+      const newMarkdownContent = beforeText + text + afterText;
+      setMarkdownContent(newMarkdownContent);
 
       // Calculate new cursor position after insertion
       const newPosition = start + text.length;
@@ -192,36 +215,96 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
         }
       }, 0);
 
+      // Convert to HTML for external value
+      const newHtmlValue = convertMarkdownToHtml(newMarkdownContent);
+
       // Simulate an onChange event
       const event = {
-        target: { value: newContent },
-      } as React.ChangeEvent<HTMLTextAreaElement>;
+        target: { value: newMarkdownContent },
+        htmlValue: newHtmlValue,
+      } as React.ChangeEvent<HTMLTextAreaElement> & { htmlValue: string };
 
       if (onChange) {
         onChange(event);
       }
 
       if (onValueChange) {
-        onValueChange(newContent);
+        onValueChange(newHtmlValue);
       }
     };
 
-    const handleBold = () => insertText("**texto en negrita**");
-    const handleItalic = () => insertText("_texto en cursiva_");
-    const handleStrikethrough = () => insertText("~~texto tachado~~");
-    const handleList = () => insertText("\n- elemento de lista");
+    // Insert HTML directly
+    const insertHtml = (html: string) => {
+      if (!textareaRef.current) return;
+
+      const textarea = textareaRef.current;
+      const { start, end } = cursorPosition;
+
+      // Get text before and after cursor
+      const beforeText = markdownContent.substring(0, start);
+      const afterText = markdownContent.substring(end);
+
+      // Create new content with inserted HTML
+      const newMarkdownContent = beforeText + html + afterText;
+      setMarkdownContent(newMarkdownContent);
+
+      // Calculate new cursor position after insertion
+      const newPosition = start + html.length;
+
+      // Update cursor position state
+      setCursorPosition({
+        start: newPosition,
+        end: newPosition,
+      });
+
+      // Set focus back to textarea and restore cursor position
+      setTimeout(() => {
+        if (textarea) {
+          textarea.focus();
+          textarea.setSelectionRange(newPosition, newPosition);
+        }
+      }, 0);
+
+      // For HTML insertion, the markdown and HTML are the same
+      const newHtmlValue = convertMarkdownToHtml(newMarkdownContent);
+
+      // Simulate an onChange event
+      const event = {
+        target: { value: newMarkdownContent },
+        htmlValue: newHtmlValue,
+      } as React.ChangeEvent<HTMLTextAreaElement> & { htmlValue: string };
+
+      if (onChange) {
+        onChange(event);
+      }
+
+      if (onValueChange) {
+        onValueChange(newHtmlValue);
+      }
+    };
+
+    const handleBold = () => insertHtml("<strong>texto en negrita</strong>");
+    const handleItalic = () => insertHtml("<em>texto en cursiva</em>");
+    const handleStrikethrough = () => insertHtml("<s>texto tachado</s>");
+    const handleList = () =>
+      insertHtml("\n<ul><li>elemento de lista</li></ul>");
     const handleAlignLeft = () =>
-      insertText("\n::left::texto alineado a la izquierda");
-    const handleAlignCenter = () => insertText("\n::center::texto centrado");
+      insertHtml(
+        '\n<div style="text-align: left;">texto alineado a la izquierda</div>'
+      );
+    const handleAlignCenter = () =>
+      insertHtml('\n<div style="text-align: center;">texto centrado</div>');
     const handleAlignRight = () =>
-      insertText("\n::right::texto alineado a la derecha");
+      insertHtml(
+        '\n<div style="text-align: right;">texto alineado a la derecha</div>'
+      );
     const handleAlignJustify = () =>
-      insertText("\n::justify::texto justificado");
-    const handleDivider = () => insertText("\n---\n");
-    const handleUnderline = () => insertText("__texto subrayado__");
-    const handleSuperscript = () => insertText("^texto superíndice^");
-    const handleSubscript = () => insertText("~texto subíndice~");
-    const handleLineBreak = () => insertText("\\n");
+      insertHtml('\n<div style="text-align: justify;">texto justificado</div>');
+    const handleDivider = () => insertHtml("\n<hr />\n");
+    const handleUnderline = () => insertHtml("<u>texto subrayado</u>");
+    const handleSuperscript = () => insertHtml("<sup>texto superíndice</sup>");
+    const handleSubscript = () => insertHtml("<sub>texto subíndice</sub>");
+    const handleLineBreak = () => insertHtml("<br />");
 
     const handleTableChange = (
       rowIndex: number,
@@ -268,8 +351,8 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
 
       tableHtml += "</table>";
 
-      // Insert table HTML at cursor position
-      insertText("\n|||\n" + tableHtml + "\n|||\n");
+      // Insert table HTML directly
+      insertHtml(tableHtml);
       setOpenTableModal(false);
     };
 
@@ -502,7 +585,7 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
         <textarea
           ref={handleTextareaRef}
           className="w-full p-3 min-h-[250px] outline-none resize-none font-mono text-sm"
-          value={content}
+          value={markdownContent}
           onChange={handleContentChange}
           onSelect={handleSelectionChange}
           onClick={handleSelectionChange}
@@ -510,25 +593,9 @@ const RichTextEditor = forwardRef<HTMLTextAreaElement, RichTextEditorProps>(
           {...props}
         />
 
-        <Tabs defaultValue="preview" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger
-              value="preview"
-              onClick={() => setActiveTab("preview")}
-            >
-              Preview
-            </TabsTrigger>
-            <TabsTrigger value="jsx" onClick={() => setActiveTab("jsx")}>
-              JSX Output
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="preview" className="p-4 min-h-[100px] border-t">
-            <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
-          </TabsContent>
-          <TabsContent value="jsx" className="p-4 min-h-[100px] border-t">
-            <pre className="text-sm">{htmlContent}</pre>
-          </TabsContent>
-        </Tabs>
+        <div className="p-4 min-h-[100px] border-t">
+          <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+        </div>
       </div>
     );
   }
